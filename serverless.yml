@@ -4,6 +4,12 @@ provider:
   name: aws
   runtime: python3.6
   stage: dev
+  iamRoleStatementsName: ${self:service}-role
+  iamRoleStatements:
+    - Action:
+        - s3:*
+      Effect: Allow
+      Resource: arn:aws:s3:::*
 
 package:
   artifact: package.zip
