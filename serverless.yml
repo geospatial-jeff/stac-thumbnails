@@ -1,0 +1,29 @@
+service: lambda-thumbnails
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: dev
+
+package:
+  artifact: package.zip
+
+functions:
+  buildThumbnail:
+    handler: lambda_thumbnails.handler.build_thumbnail
+    memorySize: 1536
+    timeout: 30
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - newThumbnailQueue
+              - Arn
+
+resources:
+  Resources:
+
+    newThumbnailQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: newThumbnailQueue
