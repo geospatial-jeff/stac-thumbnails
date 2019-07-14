@@ -27,7 +27,7 @@ def build_thumbnail(event, context):
             )
 
             print("Thumbnail size: {}".format(downsampled.shape))
-            with rasterio.open(tempfile, 'w', driver='JPEG', width=new_width, height=new_height, count=3, dtype='uint8') as dst:
+            with rasterio.open(tempfile, 'w', driver='JPEG', width=new_width, height=new_height, count=src.count, dtype='uint8') as dst:
                 dst.write(downsampled)
 
         # Upload tempfile to S3
