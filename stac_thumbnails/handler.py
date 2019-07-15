@@ -26,6 +26,9 @@ def build_thumbnail(event, context):
                 out_shape=(new_height, new_width)
             )
 
+            if downsampled.dtype == 'uint16':
+                downsampled = (downsampled/256).astype('uint8')
+
             print("Thumbnail size: {}".format(downsampled.shape))
             with rasterio.open(tempfile, 'w', driver='JPEG', width=new_width, height=new_height, count=src.count, dtype='uint8') as dst:
                 dst.write(downsampled)
