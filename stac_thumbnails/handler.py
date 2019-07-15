@@ -5,7 +5,9 @@ import uuid
 import json
 
 import rasterio
+import numpy as np
 import boto3
+
 
 logger = logging.getLogger("lambda_thumbnails")
 logger.setLevel(logging.INFO)
@@ -26,11 +28,16 @@ def build_thumbnail(event, context):
                 out_shape=(new_height, new_width)
             )
 
+            # Min/max stretch
             if downsampled.dtype == 'uint16':
-                downsampled = (downsampled/256).astype('uint8')
+                bands = []
+                for band in downsampled:
+                    rescaled = (band - band.min()) * (1 / (band.max() - band.min()) * 255)
+                    bands.append(rescaled.astype('uint8'))
+                downsampled = np.stack(bands, axis=0)
 
             print("Thumbnail size: {}".format(downsampled.shape))
-            with rasterio.open(tempfile, 'w', driver='JPEG', width=new_width, height=new_height, count=src.count, dtype='uint8') as dst:
+            with rasterio.open(tempfile, 'w', driver='JPEG', width=new_width, height=new_height,count=src.count, dtype='uint8') as dst:
                 dst.write(downsampled)
 
         # Upload tempfile to S3
