@@ -20,6 +20,7 @@ def build_thumbnail(event, context):
         stac_item = json.loads(record['body'])
         tempfile = f"/tmp/{uuid.uuid4()}.jpg"
 
+        print("Input image: {}".format(stac_item['assets']['data']['href']))
         with rasterio.open(stac_item['assets']['data']['href']) as src:
             # Downsample to 1/7th the original width/height
             new_height = int(src.height / 7)
@@ -30,6 +31,7 @@ def build_thumbnail(event, context):
 
             # Min/max stretch
             if downsampled.dtype == 'uint16':
+                print("Performing min/max stretch.")
                 bands = []
                 for band in downsampled:
                     rescaled = (band - band.min()) * (1 / (band.max() - band.min()) * 255)
