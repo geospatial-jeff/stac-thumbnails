@@ -16,7 +16,7 @@ package:
 
 functions:
   buildThumbnail:
-    handler: lambda_thumbnails.handler.build_thumbnail
+    handler: stac_thumbnails.handler.build_thumbnail
     memorySize: 1536
     timeout: 30
     events:
