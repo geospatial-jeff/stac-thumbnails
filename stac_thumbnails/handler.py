@@ -3,6 +3,7 @@
 import logging
 import uuid
 import json
+import os
 
 import rasterio
 import numpy as np
@@ -14,33 +15,25 @@ logger.setLevel(logging.INFO)
 
 s3 = boto3.client('s3')
 
-def build_thumbnail(event, context):
+BAND_CONFIGURATION = os.getenv('BAND_CONFIGURATION')
 
+def handler(event, context):
     for record in event['Records']:
         stac_item = json.loads(record['body'])
         tempfile = f"/tmp/{uuid.uuid4()}.jpg"
 
-        print("Input image: {}".format(stac_item['assets']['data']['href']))
-        with rasterio.open(stac_item['assets']['data']['href']) as src:
-            # Downsample to 1/7th the original width/height
-            new_height = int(src.height / 7)
-            new_width = int(src.width / 7)
-            downsampled = src.read(
-                out_shape=(new_height, new_width)
-            )
+        if BAND_CONFIGURATION:
+            band_ids = BAND_CONFIGURATION.split('/')
+            thumbnail = np.stack([
+                build_thumbnail(stac_item['assets'][id]['href'])[0,:,:] for id in band_ids
+            ], axis=0)
+        else:
+            thumbnail = build_thumbnail(stac_item['assets']['data']['href'])
 
-            # Min/max stretch
-            if downsampled.dtype == 'uint16':
-                print("Performing min/max stretch.")
-                bands = []
-                for band in downsampled:
-                    rescaled = (band - band.min()) * (1 / (band.max() - band.min()) * 255)
-                    bands.append(rescaled.astype('uint8'))
-                downsampled = np.stack(bands, axis=0)
+        bands, new_height, new_width = thumbnail.shape
 
-            print("Thumbnail size: {}".format(downsampled.shape))
-            with rasterio.open(tempfile, 'w', driver='JPEG', width=new_width, height=new_height,count=src.count, dtype='uint8') as dst:
-                dst.write(downsampled)
+        with rasterio.open(tempfile, 'w', driver='JPEG', width=new_width, height=new_height,count=bands, dtype='uint8') as dst:
+            dst.write(thumbnail)
 
         # Upload tempfile to S3
         out_bucket = stac_item['assets']['thumbnail']['href'].split('.')[0].split('/')[-1]
@@ -48,3 +41,24 @@ def build_thumbnail(event, context):
         print(f"Uploading to s3://{out_bucket}/{out_key}.")
 
         s3.upload_file(tempfile, out_bucket, out_key)
+
+def build_thumbnail(infile):
+    print("Input image: {}".format(infile))
+    with rasterio.open(infile) as src:
+        # Downsample to 1/7th the original width/height
+        new_height = int(src.height / 7)
+        new_width = int(src.width / 7)
+        downsampled = src.read(
+            out_shape=(new_height, new_width)
+        )
+
+        # Min/max stretch
+        if downsampled.dtype == 'uint16':
+            print("Performing min/max stretch.")
+            bands = []
+            for band in downsampled:
+                rescaled = (band - band.min()) * (1 / (band.max() - band.min()) * 255)
+                bands.append(rescaled.astype('uint8'))
+            downsampled = np.stack(bands, axis=0)
+
+        return downsampled
