@@ -16,9 +16,9 @@ package:
 
 functions:
   buildThumbnail:
-    handler: stac_thumbnails.handler.build_thumbnail
+    handler: stac_thumbnails.handler.handler
     memorySize: 1536
-    timeout: 30
+    timeout: 90
     events:
       - sqs:
           arn:
@@ -33,3 +33,4 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         QueueName: newThumbnailQueue
+        VisibilityTimeout: 90
