@@ -16,6 +16,7 @@ logger.setLevel(logging.INFO)
 s3 = boto3.client('s3')
 
 BAND_CONFIGURATION = os.getenv('BAND_CONFIGURATION')
+VSI_PATH = os.getenv('VSI_PATH')
 
 def handler(event, context):
     for record in event['Records']:
@@ -43,6 +44,8 @@ def handler(event, context):
         s3.upload_file(tempfile, out_bucket, out_key)
 
 def build_thumbnail(infile):
+    if VSI_PATH:
+        infile = VSI_PATH + infile
     print("Input image: {}".format(infile))
     with rasterio.open(infile) as src:
         # Downsample to 1/7th the original width/height
