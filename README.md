@@ -17,11 +17,20 @@ Simple SQS/lambda event to generate thumbnails from STAC Items.  The function us
 
 Many STAC Items store each unique band as an individual asset.  You can specify which asset to use when generating the thumbnail by configuring the BAND_CONFIGURATION environment variable.  The function expects R/G/B band ordering.
 
-```
+```yaml
 functions:
   buildThumbnail:
     environment:
       BAND_CONFIGURATION: "B3/B2/B1"
+```
+
+You can also use the `VSI_PATH` environment variable to prepend a GDAL vsi filesystem identifier.  This allows reading images hosted in a variety of filesystems.
+
+```yaml
+functions:
+  buildThumbnail:
+    environment:
+      VSI_PATH: /vsitar//vsicurl/
 ```
 
 ### Deployment
